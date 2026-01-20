@@ -1,0 +1,45 @@
+{
+    "version":10,
+    "cmakeMinimumRequired":{
+        "major": 4,
+        "minor": 1,
+        "patch": 2
+    },
+    "configurePresets":[{
+        "name":"default",
+        "generator": "Ninja",
+        "binaryDir": "./build",
+        "$comment":{"graphviz": "dependencies"}
+    }],
+    "buildPresets":[{
+        "name": "default",
+        "configurePreset":"default",
+        "jobs": 4
+    }],
+    "testPresets":[{
+        "name": "default",
+        "configurePreset": "default",
+        "output": {
+            "outputOnFailure": true,
+            "shortProgress": true
+        },
+        "execution": {"noTestsAction": "error", "stopOnFailure": false}
+    }],
+    "workflowPresets":[
+        {
+            "name": "default",
+            "steps": [
+                {"type":"configure", "name":"default"},
+                {"type":"build", "name":"default"}
+            ]
+        },
+        {
+            "name": "default-test",
+            "$comment":"TODO: add test when we add a test setup here",
+            "steps": [
+                {"type":"configure", "name":"default"},
+                {"type":"build", "name":"default"}
+            ]
+        }
+    ]
+}
