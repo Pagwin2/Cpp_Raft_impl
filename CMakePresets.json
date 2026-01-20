@@ -6,40 +6,41 @@
         "patch": 2
     },
     "configurePresets":[{
-        "name":"default",
+        "name":"debug",
         "generator": "Ninja",
         "binaryDir": "./build",
-        "$comment":{"graphviz": "dependencies"}
+        "$comment":{"graphviz": "dependencies"},
+        "cacheVariables": {
+            "CMAKE_BUILD_TYPE": "Debug"
+        }
+    },
+    {
+        "name":"release",
+        "generator": "Ninja",
+        "binaryDir": "./build",
+        "cacheVariables": {
+            "CMAKE_BUILD_TYPE": "Release"
+        }
     }],
     "buildPresets":[{
-        "name": "default",
-        "configurePreset":"default",
+        "name": "debug",
+        "configurePreset":"debug",
         "jobs": 4
-    }],
+    },
+    {
+        "name": "release",
+        "configurePreset":"release",
+        "jobs": 4
+    }
+    ],
     "testPresets":[{
         "name": "default",
-        "configurePreset": "default",
+        "configurePreset": "debug",
         "output": {
             "outputOnFailure": true,
             "shortProgress": true
         },
         "execution": {"noTestsAction": "error", "stopOnFailure": false}
     }],
-    "workflowPresets":[
-        {
-            "name": "default",
-            "steps": [
-                {"type":"configure", "name":"default"},
-                {"type":"build", "name":"default"}
-            ]
-        },
-        {
-            "name": "default-test",
-            "$comment":"TODO: add test when we add a test setup here",
-            "steps": [
-                {"type":"configure", "name":"default"},
-                {"type":"build", "name":"default"}
-            ]
-        }
-    ]
+    "workflowPresets":[]
 }
