@@ -3,6 +3,7 @@
 #include <raft2/helpers.hpp>
 #include <utility>
 #include <variant>
+#include <vector>
 
 namespace raft {
 using u8 = std::uint8_t;
@@ -23,8 +24,16 @@ struct request_vote {
 };
 
 constexpr msg_type SEND_LOG = 1;
-// TODO:
-struct send_log {};
+
+template <typename... Actions> struct send_log {
+  term_t leader_term;
+  id_t leader_id;
+  index_t prev_log_index;
+  term_t prev_log_term;
+  index_t committed_up_to;
+  id_t log_recipient;
+  std::vector<std::variant<Actions...>> actions;
+};
 
 constexpr msg_type ACK = 2;
 struct acknowledge {
@@ -37,7 +46,8 @@ struct acknowledge {
 constexpr msg_type EXTENSION = 255;
 
 template <typename... Types>
-using io_action = std::variant<request_vote, send_log, acknowledge, Types...>;
+using io_action =
+    std::variant<request_vote, send_log<Types...>, acknowledge, Types...>;
 
 template <typename... Types>
 
@@ -56,5 +66,18 @@ std::optional<std::size_t> serialize(io_action<Type, Types...> &&act, u8 *buf,
 }
 template <typename T>
 std::optional<T> deserialize(u8 **buf, std::size_t &buf_size);
+
+template <typename... Ts>
+concept MultiArg = requires(sizeof...(Ts) > 0);
+
+template <typename... Actions>
+std::optional<send_log<Actions...>> deserialize(u8 **buf, std::size_t &buf_size)
+
+{
+  std::optional<msg_type> type = deserialize<msg_type>(buf, buf_size);
+  if (!type.has_value() || type.value() != SEND_LOG) {
+    return std::nullopt;
+  }
+}
 
 } // namespace raft

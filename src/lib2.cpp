@@ -44,4 +44,9 @@ std::optional<request_vote> deserialize<request_vote>(u8 **buff,
                       .last_log_index = last_log_index,
                       .last_log_term = last_log_term};
 }
+
+template <>
+std::optional<acknowledge> deserialize<acknowledge>(u8 **buf,
+                                                    std::size_t &buf_size) {}
+
 } // namespace raft
