@@ -1,6 +1,9 @@
+#include <chrono>
 #include <cstdint>
 #include <optional>
 #include <raft2/helpers.hpp>
+#include <set>
+#include <span>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -67,17 +70,61 @@ std::optional<std::size_t> serialize(io_action<Type, Types...> &&act, u8 *buf,
 template <typename T>
 std::optional<T> deserialize(u8 **buf, std::size_t &buf_size);
 
-template <typename... Ts>
-concept MultiArg = requires(sizeof...(Ts) > 0);
-
 template <typename... Actions>
-std::optional<send_log<Actions...>> deserialize(u8 **buf, std::size_t &buf_size)
-
-{
+std::optional<send_log<Actions...>> deserialize_log(u8 **buf,
+                                                    std::size_t &buf_size) {
   std::optional<msg_type> type = deserialize<msg_type>(buf, buf_size);
   if (!type.has_value() || type.value() != SEND_LOG) {
     return std::nullopt;
   }
+  // TODO deserialize actions one by one may need an API change
 }
+
+enum class mode { follower, candidate, leader };
+
+template <typename Inner, typename... Actions> class base_machine {
+protected:
+  // TODO: continue after leader, follower and candidate are done
+  id_t self_id;
+  term_t term;
+  index_t committed;
+  std::vector<io_action<Actions...>> log;
+  std::set<id_t> siblings;
+  Inner machine;
+  base_machine(id_t id, std::set<id_t> siblings)
+      : self_id{id}, term{0}, committed{0}, log{}, siblings{siblings},
+        machine{} {}
+};
+
+template <typename Inner, typename RNG, typename... Actions>
+class follower_machine : base_machine<Inner, Actions...> {};
+template <typename Inner, typename RNG, typename... Actions>
+class candidate_machine : base_machine<Inner, Actions...> {};
+template <typename Inner, typename RNG, typename... Actions>
+class leader_machine : base_machine<Inner, Actions...> {};
+template <typename Inner, typename RNG, typename... Actions>
+class state_machine {
+  using underlying_machine =
+      std::variant<follower_machine<Inner, RNG, Actions...>,
+                   candidate_machine<Inner, RNG, Actions...>,
+                   leader_machine<Inner, RNG, Actions...>>;
+  underlying_machine self;
+  std::vector<u8> unprocessed_bytes;
+
+  // process unprocessed_bytes into actions to pass to the underlying machine
+  void process_bytes() {}
+
+public:
+  state_machine()
+      : underlying_machine{follower_machine<Actions...>{}},
+        unprocessed_bytes{} {}
+  // copy bytes into unprocessed_bytes and then try to process them
+  void receive_bytes(std::span<u8> bytes) {}
+
+  // return io actions which should happen based on our current state while
+  // changing that state based on the advacement in time
+  std::span<io_action<Actions...>>
+  advance(std::chrono::milliseconds advance_by) {}
+};
 
 } // namespace raft
